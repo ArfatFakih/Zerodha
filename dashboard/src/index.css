@@ -733,6 +733,15 @@ hr {
   cursor: pointer;
 }
 
+.actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;   
+  min-width: 45px; 
+  vertical-align: middle;
+}
+
 .buy {
   background-color: #4184f3;
   color: #fff;
@@ -755,7 +764,7 @@ hr {
 }
 
 .icon {
-  transform: scale(0.7);
+  transform: scale(0.8);
   color: rgb(65, 65, 65);
 }
 
@@ -789,6 +798,12 @@ hr {
   color: rgb(223, 73, 73);
 }
 
+.itemInfo {
+  display: flex;
+  align-items: center; 
+  gap: 4px;            
+}
+
 .down {
   color: rgb(223, 73, 73);
 }
@@ -796,6 +811,7 @@ hr {
 .up {
   color: rgb(103, 201, 136);
 }
+
 
 .settings {
   transform: scale(0.8);
