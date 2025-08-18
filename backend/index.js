@@ -19,7 +19,7 @@ connectDb();
 
 app.use(
   cors({
-    origin: ["http://localhost:5174", "http://localhost:5173"], // allow both frontends
+    origin: ["http://localhost:5174", "http://localhost:5173", process.env.FRONTEND_URL, process.env.DASHBOARD_URL], // allow both frontends
     credentials: true, // allow cookies / sessions
   })
 );
@@ -34,7 +34,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,           // set true if you serve over HTTPS
+    secure: true,           // set true if you serve over HTTPS
     maxAge: 1000 * 60 * 60,  // 1 hour
   },
 }));
