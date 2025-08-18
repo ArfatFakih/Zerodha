@@ -199,6 +199,11 @@ app.get("/allPositions", async (req, res) => {
   res.json(allPositions);
 });
 
+app.get("/allOrders", async (req, res) => {
+  let orders = await Order.find({});
+  res.json(orders);
+});
+
 app.post("/newOrder", async (req, res) => {
   let newOrder = new Order({
     name: req.body.name,
