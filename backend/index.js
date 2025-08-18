@@ -25,6 +25,9 @@ const allowedOrigins = [
   process.env.DASHBOARD_URL
 ].filter(Boolean);
 
+console.log("Allowed origins at startup:", allowedOrigins);
+
+
 app.use(cors({
   origin: function(origin, callback){
     if(!origin) return callback(null, true); // allow Postman or same-origin requests
