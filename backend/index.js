@@ -66,7 +66,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Auth routes
-app.use("/", authRoutes);
+app.use("/auth", authRoutes);
 
 
 
