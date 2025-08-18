@@ -16,7 +16,7 @@ const BuyWindow = ({ uid }) => {
   const handleBuyClick = async () => {
     try {
       await axios.post(
-        "http://localhost:8000/newOrder",
+        "https://zerodha-u26q.onrender.com/newOrder",
         {
           name: uid,
           qty: parseInt(stockQuantity, 10),
