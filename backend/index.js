@@ -2,11 +2,17 @@ const express = require("express");
 const app = express();
 const dotenv = require('dotenv').config();
 const PORT = process.env.PORT || 3002;
+const bodyParser = require("body-parser");
+const cors = require("cors");
 const connectDb = require('./config/dbConnection');
 const Holding = require('./models/HoldingsModel');
 const Position = require('./models/PositionsModel');
+const Order = require('./models/OrdersModel');
 
 connectDb();
+
+app.use(cors());
+app.use(bodyParser.json());
 
 
 //Api to add dummy data
@@ -182,6 +188,29 @@ connectDb();
 //   res.send("Done!");
 // });
 
+
+app.get("/allHoldings", async (req, res) => {
+  let allHoldings = await Holding.find({});
+  res.json(allHoldings);
+});
+
+app.get("/allPositions", async (req, res) => {
+  let allPositions = await Position.find({});
+  res.json(allPositions);
+});
+
+app.post("/newOrder", async (req, res) => {
+  let newOrder = new Order({
+    name: req.body.name,
+    qty: req.body.qty,
+    price: req.body.price,
+    mode: req.body.mode,
+  });
+
+  newOrder.save();
+
+  res.send("Order saved!");
+});
 
 app.listen(PORT, () => {
     console.log(`SERVER IS RUNNING ON PORT:${PORT}`);
