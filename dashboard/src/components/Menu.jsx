@@ -1,10 +1,13 @@
-import React from "react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Menu = () => {
   const [selectMenu, setSelectMenu] = useState(0);
   const [isProfileDropdown, setIsProfileDropdown] = useState(false);
+  const navigate = useNavigate();
+
+  // Example username (you can fetch from context/localStorage/api)
+  const username = localStorage.getItem("username") || "John Doe";
 
   const handleMenuClick = (index) => {
     setSelectMenu(index);
@@ -12,6 +15,13 @@ const Menu = () => {
 
   const handleProfileClick = () => {
     setIsProfileDropdown(!isProfileDropdown);
+  };
+
+  const handleLogout = () => {
+    // Clear user session
+    localStorage.removeItem("username");
+    localStorage.removeItem("token"); // if you store auth token
+    window.location.href = "http://localhost:5174/";
   };
 
   const menuClass = "menu";
@@ -90,10 +100,19 @@ const Menu = () => {
           </li>
         </ul>
         <hr />
+
+        {/* Profile Section */}
         <div className="profile" onClick={handleProfileClick}>
-          <div className="avatar">ZU</div>
-          <p className="username">USERID</p>
+          <div className="avatar">{username.charAt(0).toUpperCase()}</div>
+          <p className="username">{username}</p>
         </div>
+
+        {/* Dropdown */}
+        {isProfileDropdown && (
+          <div className="dropdown">
+            <button onClick={handleLogout}>Logout</button>
+          </div>
+        )}
       </div>
     </div>
   );

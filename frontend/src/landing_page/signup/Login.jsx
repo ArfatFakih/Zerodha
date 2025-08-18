@@ -1,40 +1,47 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import "./LoginSignUp.css";
 
-const Signup = () => {
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
-  const navigate = useNavigate();
+const Login = () => {
+  const [form, setForm] = useState({ email: "", password: "" });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post("http://localhost:8000/signup", form, { withCredentials: true });
-      alert("Signup successful! Please login.");
-      navigate("/login");
-    } catch (err) {
-      alert("Error: " + err.response.data.message);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const res = await axios.post(
+      "http://localhost:8000/login",
+      form,
+      { withCredentials: true }
+    );
+
+    console.log("Login response:", res.data);
+
+    if (res.data.message === "Login successful") {
+      // Save user info or session
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
+      // Redirect to dashboard app
+      window.location.href = "http://localhost:5173/";
+    } else {
+      alert(res.data.message || "Login failed!");
     }
-  };
+  } catch (err) {
+    console.error("Login error:", err);
+    alert("Invalid credentials!");
+  }
+};
+
 
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h2>Signup</h2>
+        <h2>Login</h2>
         <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            className="form-control"
-            name="username"
-            placeholder="Username (optional)"
-            value={form.username}
-            onChange={handleChange}
-          />
           <input
             type="email"
             className="form-control"
@@ -54,15 +61,15 @@ const Signup = () => {
             required
           />
           <button type="submit" className="btn btn-primary">
-            Signup
+            Login
           </button>
         </form>
         <p>
-          Already have an account? <Link to="/login">Login</Link>
+          Don't have an account? <Link to="/signup">Signup</Link>
         </p>
       </div>
     </div>
   );
 };
 
-export default Signup;
+export default Login;

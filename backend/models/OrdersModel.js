@@ -13,6 +13,11 @@ const OrdersSchema = new mongoose.Schema({
     mode: {
         type: String
     },
+    user: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "User", 
+        required: true 
+    }
 }, {
     timestamps: true
 })
