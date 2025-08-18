@@ -17,15 +17,36 @@ const { router: authRoutes, ensureAuth } = require("./routes/user");
 
 connectDb();
 
-app.use(
-  cors({
-    origin: ["http://localhost:5174", "http://localhost:5173", process.env.FRONTEND_URL, process.env.DASHBOARD_URL], // allow both frontends
-    credentials: true, // allow cookies / sessions
-  })
-);
+// ------------------ CORS ------------------
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  process.env.FRONTEND_URL,
+  process.env.DASHBOARD_URL
+];
+
+app.use(cors({
+  origin: function(origin, callback){
+    if(!origin) return callback(null, true); // allow Postman or same-origin requests
+    if(allowedOrigins.indexOf(origin) === -1){
+      return callback(new Error("CORS policy: This origin is not allowed"), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"]
+}));
+
+// Handle preflight requests
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
+
 app.use(bodyParser.json());
 
-// Sessions (Mongo store keeps sessions across restarts)
+// ------------------ Sessions ------------------
 app.use(session({
   secret: process.env.SESSION_SECRET || "supersecret",
   resave: false,
@@ -33,8 +54,8 @@ app.use(session({
   store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
   cookie: {
     httpOnly: true,
-    sameSite: "lax",
-    secure: true,           // set true if you serve over HTTPS
+    sameSite: "none", // important for cross-origin cookies
+    secure: true,     // must be true on HTTPS
     maxAge: 1000 * 60 * 60,  // 1 hour
   },
 }));
