@@ -25,26 +25,24 @@ const allowedOrigins = [
   process.env.DASHBOARD_URL
 ].filter(Boolean);
 
-console.log("Allowed origins at startup:", allowedOrigins);
 
-
-app.use(cors({
-  origin: function(origin, callback){
-    if(!origin) return callback(null, true); // allow Postman or same-origin requests
-    if(allowedOrigins.indexOf(origin) === -1){
-      return callback(new Error("CORS policy: This origin is not allowed"), false);
+const corsOptions = {
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // allow Postman / curl / same-origin
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    return callback(new Error("CORS policy: This origin is not allowed"), false);
   },
   credentials: true,
   methods: ["GET","POST","PUT","DELETE","OPTIONS"]
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Handle preflight requests
-app.options("*", cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
+app.options("*", cors(corsOptions));
+
 
 
 app.use(bodyParser.json());
