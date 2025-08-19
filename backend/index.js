@@ -86,6 +86,17 @@ try {
   process.exit(1);
 }
 
+// Step 8: Register auth routes
+console.log('🔍 Step 8: Registering auth routes...');
+try {
+  app.use("/auth", authRoutes);
+  console.log('✅ Auth routes registered successfully');
+} catch (error) {
+  console.error('❌ Auth routes registration failed:', error.message);
+  console.error('❌ Full error:', error);
+  process.exit(1);
+}
+
 // Simple health check
 app.get("/", (req, res) => {
   res.json({ 
@@ -94,7 +105,7 @@ app.get("/", (req, res) => {
   });
 });
 
-console.log('✅ Steps 1-7 complete - starting server...');
+console.log('✅ Steps 1-8 complete - starting server...');
 
 app.listen(PORT, () => {
     console.log(`🚀 MINIMAL SERVER IS RUNNING ON PORT: ${PORT}`);
