@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const dotenv = require('dotenv').config();
-const PORT = process.env.PORT || 8000; // Changed to match your env
+const PORT = process.env.PORT || 8000;
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const session = require("express-session");
@@ -35,7 +35,6 @@ try {
 connectDb();
 
 // ------------------ CORS ------------------
-// Filter out undefined/null values and ensure valid URLs
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
@@ -43,11 +42,11 @@ const allowedOrigins = [
   process.env.DASHBOARD_URL
 ].filter(url => url && typeof url === 'string' && url.trim().length > 0);
 
-console.log('Allowed Origins:', allowedOrigins); // Debug log
+console.log('Allowed Origins:', allowedOrigins);
 
 const corsOptions = {
   origin: function(origin, callback) {
-    if (!origin) return callback(null, true); // allow Postman / curl / same-origin
+    if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -58,40 +57,62 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Handle preflight requests
 app.options("*", cors(corsOptions));
-
 app.use(bodyParser.json());
 
 // ------------------ Sessions ------------------
-app.use(session({
-  secret: process.env.SESSION_SECRET || "supersecret",
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
-  cookie: {
-    httpOnly: true,
-    sameSite: "none", // important for cross-origin cookies
-    secure: process.env.NODE_ENV === 'production', // Only secure in production
-    maxAge: 1000 * 60 * 60,  // 1 hour
-  },
-}));
+console.log('Setting up sessions...');
+try {
+  app.use(session({
+    secret: process.env.SESSION_SECRET || "supersecret",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
+    cookie: {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === 'production' ? "none" : "lax",
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60,
+    },
+  }));
+  console.log('Sessions configured successfully');
+} catch (error) {
+  console.error('Error configuring sessions:', error.message);
+  process.exit(1);
+}
 
-// Passport
-require("./config/passport")(passport);
-app.use(passport.initialize());
-app.use(passport.session());
+// ------------------ Passport ------------------
+console.log('Setting up Passport...');
+try {
+  require("./config/passport")(passport);
+  app.use(passport.initialize());
+  app.use(passport.session());
+  console.log('Passport configured successfully');
+} catch (error) {
+  console.error('Error configuring Passport:', error.message);
+  process.exit(1);
+}
 
-// Auth routes - wrapped in try-catch
+// ------------------ Auth Routes ------------------
+console.log('Registering auth routes...');
 try {
   app.use("/auth", authRoutes);
   console.log('Auth routes registered successfully');
 } catch (error) {
   console.error('Error registering auth routes:', error.message);
+  process.exit(1);
 }
 
-// -------- Protected data routes (per-user isolation) --------
+// ------------------ Protected Routes ------------------
+console.log('Setting up protected routes...');
+
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "Zerodha Clone API Server", 
+    timestamp: new Date().toISOString(),
+    status: "running"
+  });
+});
 
 app.get("/allHoldings", ensureAuth, async (req, res) => {
   try {
@@ -130,7 +151,7 @@ app.post("/newOrder", ensureAuth, async (req, res) => {
       qty: req.body.qty,
       price: req.body.price,
       mode: req.body.mode,
-      user: req.user._id, // <- tie to logged-in user
+      user: req.user._id,
     });
 
     await newOrder.save();
@@ -141,12 +162,11 @@ app.post("/newOrder", ensureAuth, async (req, res) => {
   }
 });
 
-// Health check route
-app.get("/", (req, res) => {
-  res.json({ message: "Server is running!", timestamp: new Date().toISOString() });
-});
+console.log('All routes configured successfully');
 
+// ------------------ Start Server ------------------
 app.listen(PORT, () => {
-    console.log(`SERVER IS RUNNING ON PORT:${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🚀 SERVER IS RUNNING ON PORT: ${PORT}`);
+    console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/`);
 });
