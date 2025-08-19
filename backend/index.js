@@ -125,6 +125,38 @@ try {
   });
   console.log('✅ /allPositions route added');
   
+  // Third route - allOrders
+  app.get("/allOrders", ensureAuth, async (req, res) => {
+    try {
+      const orders = await Order.find({ user: req.user._id }).lean();
+      res.json(orders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+  });
+  console.log('✅ /allOrders route added');
+  
+  // Fourth route - newOrder
+  app.post("/newOrder", ensureAuth, async (req, res) => {
+    try {
+      const newOrder = new Order({
+        name: req.body.name,
+        qty: req.body.qty,
+        price: req.body.price,
+        mode: req.body.mode,
+        user: req.user._id,
+      });
+
+      await newOrder.save();
+      res.json({ message: "Order saved!", order: newOrder });
+    } catch (error) {
+      console.error('Error saving order:', error);
+      res.status(500).json({ error: 'Failed to save order' });
+    }
+  });
+  console.log('✅ /newOrder route added');
+  
 } catch (error) {
   console.error('❌ Protected routes setup failed:', error.message);
   console.error('❌ Full error:', error);
@@ -139,7 +171,7 @@ app.get("/", (req, res) => {
   });
 });
 
-console.log('✅ Steps 1-9 complete - starting server...');
+console.log('✅ All routes added successfully - starting server...');
 
 app.listen(PORT, () => {
     console.log(`🚀 MINIMAL SERVER IS RUNNING ON PORT: ${PORT}`);
