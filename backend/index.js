@@ -67,6 +67,25 @@ try {
   process.exit(1);
 }
 
+// Step 7: Add Passport
+console.log('🔍 Step 7: Setting up Passport...');
+try {
+  const passport = require("passport");
+  
+  // Load passport configuration
+  require("./config/passport")(passport);
+  
+  // Initialize passport middleware
+  app.use(passport.initialize());
+  app.use(passport.session());
+  
+  console.log('✅ Passport configured successfully');
+} catch (error) {
+  console.error('❌ Passport setup failed:', error.message);
+  console.error('❌ Full error:', error);
+  process.exit(1);
+}
+
 // Simple health check
 app.get("/", (req, res) => {
   res.json({ 
@@ -75,7 +94,7 @@ app.get("/", (req, res) => {
   });
 });
 
-console.log('✅ Steps 1-6 complete - starting server...');
+console.log('✅ Steps 1-7 complete - starting server...');
 
 app.listen(PORT, () => {
     console.log(`🚀 MINIMAL SERVER IS RUNNING ON PORT: ${PORT}`);
