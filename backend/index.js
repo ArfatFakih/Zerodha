@@ -1,178 +1,262 @@
 const express = require("express");
 const app = express();
 const dotenv = require('dotenv').config();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 3002;
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
+const passport = require("passport");
 
-console.log('🔍 Step 1: Basic setup...');
-console.log('Environment variables loaded:');
-console.log('MONGO_URL:', process.env.MONGO_URL ? 'Set' : 'Not set');
+const connectDb = require('./config/dbConnection');
+const Holding = require('./models/HoldingsModel');
+const Position = require('./models/PositionsModel');
+const Order = require('./models/OrdersModel');
 
-// Step 2: Add database connection
-console.log('🔍 Step 2: Loading database...');
-try {
-  const connectDb = require('./config/dbConnection');
-  connectDb();
-  console.log('✅ Database connection loaded');
-} catch (error) {
-  console.error('❌ Database connection failed:', error.message);
-  process.exit(1);
-}
+const { router: authRoutes, ensureAuth } = require("./routes/user");
 
-// Step 3: Load models
-console.log('🔍 Step 3: Loading models...');
-try {
-  const Holding = require('./models/HoldingsModel');
-  const Position = require('./models/PositionsModel');
-  const Order = require('./models/OrdersModel');
-  console.log('✅ Models loaded successfully');
-} catch (error) {
-  console.error('❌ Models loading failed:', error.message);
-  process.exit(1);
-}
+connectDb();
 
-// Step 4: Load auth routes
-console.log('🔍 Step 4: Loading auth routes...');
-let authRoutes, ensureAuth;
-try {
-  const authModule = require("./routes/user");
-  authRoutes = authModule.router;
-  ensureAuth = authModule.ensureAuth;
-  console.log('✅ Auth routes loaded successfully');
-} catch (error) {
-  console.error('❌ Auth routes loading failed:', error.message);
-  process.exit(1);
-}
+app.use(
+  cors({
+    origin: ["http://localhost:5174", "http://localhost:5173"], // allow both frontends
+    credentials: true, // allow cookies / sessions
+  })
+);
+app.use(bodyParser.json());
 
-// Step 6: Add Sessions
-console.log('🔍 Step 6: Setting up sessions...');
-try {
-  const session = require("express-session");
-  const MongoStore = require("connect-mongo");
-  
-  app.use(session({
-    secret: process.env.SESSION_SECRET || "supersecret",
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
-    cookie: {
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? "none" : "lax",
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60,
-    },
-  }));
-  console.log('✅ Sessions configured successfully');
-} catch (error) {
-  console.error('❌ Sessions setup failed:', error.message);
-  process.exit(1);
-}
+// Sessions (Mongo store keeps sessions across restarts)
+app.use(session({
+  secret: process.env.SESSION_SECRET || "supersecret",
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false,           // set true if you serve over HTTPS
+    maxAge: 1000 * 60 * 60,  // 1 hour
+  },
+}));
 
-// Step 7: Add Passport
-console.log('🔍 Step 7: Setting up Passport...');
-try {
-  const passport = require("passport");
-  
-  // Load passport configuration
-  require("./config/passport")(passport);
-  
-  // Initialize passport middleware
-  app.use(passport.initialize());
-  app.use(passport.session());
-  
-  console.log('✅ Passport configured successfully');
-} catch (error) {
-  console.error('❌ Passport setup failed:', error.message);
-  console.error('❌ Full error:', error);
-  process.exit(1);
-}
+// Passport
+require("./config/passport")(passport);
+app.use(passport.initialize());
+app.use(passport.session());
 
-// Step 8: Register auth routes
-console.log('🔍 Step 8: Registering auth routes...');
-try {
-  app.use("/auth", authRoutes);
-  console.log('✅ Auth routes registered successfully');
-} catch (error) {
-  console.error('❌ Auth routes registration failed:', error.message);
-  console.error('❌ Full error:', error);
-  process.exit(1);
-}
+// Auth routes
+app.use("/", authRoutes);
 
-// Step 9: Add protected routes one by one
-console.log('🔍 Step 9: Adding protected routes...');
 
-try {
-  // First route - allHoldings
-  app.get("/allHoldings", ensureAuth, async (req, res) => {
-    try {
-      const allHoldings = await Holding.find({ user: req.user._id }).lean();
-      res.json(allHoldings);
-    } catch (error) {
-      console.error('Error fetching holdings:', error);
-      res.status(500).json({ error: 'Failed to fetch holdings' });
-    }
-  });
-  console.log('✅ /allHoldings route added');
-  
-  // Second route - allPositions  
-  app.get("/allPositions", ensureAuth, async (req, res) => {
-    try {
-      const allPositions = await Position.find({ user: req.user._id }).lean();
-      res.json(allPositions);
-    } catch (error) {
-      console.error('Error fetching positions:', error);
-      res.status(500).json({ error: 'Failed to fetch positions' });
-    }
-  });
-  console.log('✅ /allPositions route added');
-  
-  // Third route - allOrders
-  app.get("/allOrders", ensureAuth, async (req, res) => {
-    try {
-      const orders = await Order.find({ user: req.user._id }).lean();
-      res.json(orders);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      res.status(500).json({ error: 'Failed to fetch orders' });
-    }
-  });
-  console.log('✅ /allOrders route added');
-  
-  // Fourth route - newOrder
-  app.post("/newOrder", ensureAuth, async (req, res) => {
-    try {
-      const newOrder = new Order({
-        name: req.body.name,
-        qty: req.body.qty,
-        price: req.body.price,
-        mode: req.body.mode,
-        user: req.user._id,
-      });
 
-      await newOrder.save();
-      res.json({ message: "Order saved!", order: newOrder });
-    } catch (error) {
-      console.error('Error saving order:', error);
-      res.status(500).json({ error: 'Failed to save order' });
-    }
-  });
-  console.log('✅ /newOrder route added');
-  
-} catch (error) {
-  console.error('❌ Protected routes setup failed:', error.message);
-  console.error('❌ Full error:', error);
-  process.exit(1);
-}
+//Api to add dummy data
 
-// Simple health check
-app.get("/", (req, res) => {
-  res.json({ 
-    message: "Minimal server is running!",
-    timestamp: new Date().toISOString()
-  });
+
+// app.get("/addHoldings", async (req, res) => {
+//   let tempHoldings = [
+//     {
+//       name: "BHARTIARTL",
+//       qty: 2,
+//       avg: 538.05,
+//       price: 541.15,
+//       net: "+0.58%",
+//       day: "+2.99%",
+//     },
+//     {
+//       name: "HDFCBANK",
+//       qty: 2,
+//       avg: 1383.4,
+//       price: 1522.35,
+//       net: "+10.04%",
+//       day: "+0.11%",
+//     },
+//     {
+//       name: "HINDUNILVR",
+//       qty: 1,
+//       avg: 2335.85,
+//       price: 2417.4,
+//       net: "+3.49%",
+//       day: "+0.21%",
+//     },
+//     {
+//       name: "INFY",
+//       qty: 1,
+//       avg: 1350.5,
+//       price: 1555.45,
+//       net: "+15.18%",
+//       day: "-1.60%",
+//       isLoss: true,
+//     },
+//     {
+//       name: "ITC",
+//       qty: 5,
+//       avg: 202.0,
+//       price: 207.9,
+//       net: "+2.92%",
+//       day: "+0.80%",
+//     },
+//     {
+//       name: "KPITTECH",
+//       qty: 5,
+//       avg: 250.3,
+//       price: 266.45,
+//       net: "+6.45%",
+//       day: "+3.54%",
+//     },
+//     {
+//       name: "M&M",
+//       qty: 2,
+//       avg: 809.9,
+//       price: 779.8,
+//       net: "-3.72%",
+//       day: "-0.01%",
+//       isLoss: true,
+//     },
+//     {
+//       name: "RELIANCE",
+//       qty: 1,
+//       avg: 2193.7,
+//       price: 2112.4,
+//       net: "-3.71%",
+//       day: "+1.44%",
+//     },
+//     {
+//       name: "SBIN",
+//       qty: 4,
+//       avg: 324.35,
+//       price: 430.2,
+//       net: "+32.63%",
+//       day: "-0.34%",
+//       isLoss: true,
+//     },
+//     {
+//       name: "SGBMAY29",
+//       qty: 2,
+//       avg: 4727.0,
+//       price: 4719.0,
+//       net: "-0.17%",
+//       day: "+0.15%",
+//     },
+//     {
+//       name: "TATAPOWER",
+//       qty: 5,
+//       avg: 104.2,
+//       price: 124.15,
+//       net: "+19.15%",
+//       day: "-0.24%",
+//       isLoss: true,
+//     },
+//     {
+//       name: "TCS",
+//       qty: 1,
+//       avg: 3041.7,
+//       price: 3194.8,
+//       net: "+5.03%",
+//       day: "-0.25%",
+//       isLoss: true,
+//     },
+//     {
+//       name: "WIPRO",
+//       qty: 4,
+//       avg: 489.3,
+//       price: 577.75,
+//       net: "+18.08%",
+//       day: "+0.32%",
+//     },
+//   ];
+
+//   tempHoldings.forEach((item) => {
+//     let newHolding = new Holding({
+//       name: item.name,
+//       qty: item.qty,
+//       avg: item.avg,
+//       price: item.price,
+//       net: item.day,
+//       day: item.day,
+//     });
+
+//     newHolding.save();
+//   });
+//   res.send("Done!");
+// });
+
+
+// app.get("/addPositions", async (req, res) => {
+//   let tempPositions = [
+//     {
+//       product: "CNC",
+//       name: "EVEREADY",
+//       qty: 2,
+//       avg: 316.27,
+//       price: 312.35,
+//       net: "+0.58%",
+//       day: "-1.24%",
+//       isLoss: true,
+//     },
+//     {
+//       product: "CNC",
+//       name: "JUBLFOOD",
+//       qty: 1,
+//       avg: 3124.75,
+//       price: 3082.65,
+//       net: "+10.04%",
+//       day: "-1.35%",
+//       isLoss: true,
+//     },
+//   ];
+
+//   tempPositions.forEach((item) => {
+//     let newPosition = new Position({
+//       product: item.product,
+//       name: item.name,
+//       qty: item.qty,
+//       avg: item.avg,
+//       price: item.price,
+//       net: item.net,
+//       day: item.day,
+//       isLoss: item.isLoss,
+//     });
+
+//     newPosition.save();
+//   });
+//   res.send("Done!");
+// });
+
+
+
+// -------- Protected data routes (per-user isolation) --------
+
+
+app.get("/allHoldings", ensureAuth, async (req, res) => {
+  const allHoldings = await Holding.find({ user: req.user._id }).lean();
+  res.json(allHoldings);
 });
 
-console.log('✅ All routes added successfully - starting server...');
+app.get("/allPositions", ensureAuth, async (req, res) => {
+  const allPositions = await Position.find({ user: req.user._id }).lean();
+  res.json(allPositions);
+});
+
+app.get("/allOrders", ensureAuth, async (req, res) => {
+  const orders = await Order.find({ user: req.user._id }).lean();
+  res.json(orders);
+});
+
+app.post("/newOrder", ensureAuth, async (req, res) => {
+  const newOrder = new Order({
+    name: req.body.name,
+    qty: req.body.qty,
+    price: req.body.price,
+    mode: req.body.mode,
+    user: req.user._id, // <- tie to logged-in user
+  });
+
+  await newOrder.save();
+  res.send("Order saved!");
+});
+
+//Normal change
 
 app.listen(PORT, () => {
-    console.log(`🚀 MINIMAL SERVER IS RUNNING ON PORT: ${PORT}`);
-});
+    console.log(`SERVER IS RUNNING ON PORT:${PORT}`);
+})

@@ -14,7 +14,7 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   try {
     const res = await axios.post(
-      "https://zerodha-2v0l.onrender.com/auth/login",
+      "http://localhost:8000/login",
       form,
       { withCredentials: true }
     );
@@ -26,7 +26,7 @@ const handleSubmit = async (e) => {
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
       // Redirect to dashboard app
-      window.location.href = "https://zerodha-orzy-84ac2hk4w-arfat-fakihs-projects.vercel.app/";
+      window.location.href = "http://localhost:5173/";
     } else {
       alert(res.data.message || "Login failed!");
     }
