@@ -30,8 +30,18 @@ try {
   process.exit(1);
 }
 
-// Basic middleware
-app.use(express.json());
+// Step 4: Load auth routes
+console.log('🔍 Step 4: Loading auth routes...');
+let authRoutes, ensureAuth;
+try {
+  const authModule = require("./routes/user");
+  authRoutes = authModule.router;
+  ensureAuth = authModule.ensureAuth;
+  console.log('✅ Auth routes loaded successfully');
+} catch (error) {
+  console.error('❌ Auth routes loading failed:', error.message);
+  process.exit(1);
+}
 
 // Simple health check
 app.get("/", (req, res) => {
@@ -41,7 +51,7 @@ app.get("/", (req, res) => {
   });
 });
 
-console.log('✅ Step 1-3 complete - starting server...');
+console.log('✅ Steps 1-5 complete - starting server...');
 
 app.listen(PORT, () => {
     console.log(`🚀 MINIMAL SERVER IS RUNNING ON PORT: ${PORT}`);
