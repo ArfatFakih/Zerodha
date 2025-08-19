@@ -14,7 +14,7 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   try {
     const res = await axios.post(
-      "https://zerodha-u26q.onrender.com/auth/login",
+      "https://zerodha-2v0l.onrender.com/auth/login",
       form,
       { withCredentials: true }
     );
