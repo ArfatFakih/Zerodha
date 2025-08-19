@@ -255,6 +255,8 @@ app.post("/newOrder", ensureAuth, async (req, res) => {
   res.send("Order saved!");
 });
 
+//Normal change
+
 app.listen(PORT, () => {
     console.log(`SERVER IS RUNNING ON PORT:${PORT}`);
 })
