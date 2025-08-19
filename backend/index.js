@@ -43,6 +43,30 @@ try {
   process.exit(1);
 }
 
+// Step 6: Add Sessions
+console.log('🔍 Step 6: Setting up sessions...');
+try {
+  const session = require("express-session");
+  const MongoStore = require("connect-mongo");
+  
+  app.use(session({
+    secret: process.env.SESSION_SECRET || "supersecret",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
+    cookie: {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === 'production' ? "none" : "lax",
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60,
+    },
+  }));
+  console.log('✅ Sessions configured successfully');
+} catch (error) {
+  console.error('❌ Sessions setup failed:', error.message);
+  process.exit(1);
+}
+
 // Simple health check
 app.get("/", (req, res) => {
   res.json({ 
@@ -51,7 +75,7 @@ app.get("/", (req, res) => {
   });
 });
 
-console.log('✅ Steps 1-5 complete - starting server...');
+console.log('✅ Steps 1-6 complete - starting server...');
 
 app.listen(PORT, () => {
     console.log(`🚀 MINIMAL SERVER IS RUNNING ON PORT: ${PORT}`);
