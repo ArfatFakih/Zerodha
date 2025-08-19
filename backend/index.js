@@ -97,6 +97,40 @@ try {
   process.exit(1);
 }
 
+// Step 9: Add protected routes one by one
+console.log('🔍 Step 9: Adding protected routes...');
+
+try {
+  // First route - allHoldings
+  app.get("/allHoldings", ensureAuth, async (req, res) => {
+    try {
+      const allHoldings = await Holding.find({ user: req.user._id }).lean();
+      res.json(allHoldings);
+    } catch (error) {
+      console.error('Error fetching holdings:', error);
+      res.status(500).json({ error: 'Failed to fetch holdings' });
+    }
+  });
+  console.log('✅ /allHoldings route added');
+  
+  // Second route - allPositions  
+  app.get("/allPositions", ensureAuth, async (req, res) => {
+    try {
+      const allPositions = await Position.find({ user: req.user._id }).lean();
+      res.json(allPositions);
+    } catch (error) {
+      console.error('Error fetching positions:', error);
+      res.status(500).json({ error: 'Failed to fetch positions' });
+    }
+  });
+  console.log('✅ /allPositions route added');
+  
+} catch (error) {
+  console.error('❌ Protected routes setup failed:', error.message);
+  console.error('❌ Full error:', error);
+  process.exit(1);
+}
+
 // Simple health check
 app.get("/", (req, res) => {
   res.json({ 
@@ -105,7 +139,7 @@ app.get("/", (req, res) => {
   });
 });
 
-console.log('✅ Steps 1-8 complete - starting server...');
+console.log('✅ Steps 1-9 complete - starting server...');
 
 app.listen(PORT, () => {
     console.log(`🚀 MINIMAL SERVER IS RUNNING ON PORT: ${PORT}`);
