@@ -19,7 +19,7 @@ connectDb();
 
 app.use(
   cors({
-    origin: ["http://localhost:5174", "http://localhost:5173", "https://zerodha-p7j8zw25d-arfat-fakihs-projects.vercel.app", "https://zerodha-orzy-novdrk190-arfat-fakihs-projects.vercel.app"], // allow both frontends
+    origin: ["http://localhost:5174", "http://localhost:5173", "https://zerodha-2saf8odud-arfat-fakihs-projects.vercel.app", "https://zerodha-orzy-mwzr1hd8t-arfat-fakihs-projects.vercel.app"], // allow both frontends
     credentials: true, // allow cookies / sessions
   })
 );
