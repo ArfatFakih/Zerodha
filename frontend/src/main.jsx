@@ -1,6 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+
+import axios from 'axios';
+axios.defaults.withCredentials = true;
+
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
 import HomePage from './landing_page/home/HomePage'
