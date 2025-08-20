@@ -19,10 +19,21 @@ connectDb();
 
 app.use(
   cors({
-    origin: ["http://localhost:5174", "http://localhost:5173", "https://zerodha-2saf8odud-arfat-fakihs-projects.vercel.app", "https://zerodha-orzy-mwzr1hd8t-arfat-fakihs-projects.vercel.app"], // allow both frontends
-    credentials: true, // allow cookies / sessions
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        origin.includes("vercel.app") || // allow any vercel.app frontend
+        origin.startsWith("http://localhost:")
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
+
 app.use(bodyParser.json());
 
 // Sessions (Mongo store keeps sessions across restarts)

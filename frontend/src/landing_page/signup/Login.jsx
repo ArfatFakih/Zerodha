@@ -26,7 +26,7 @@ const handleSubmit = async (e) => {
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
       // Redirect to dashboard app (Updated dashboard URL)
-      window.location.href = "https://zerodha-orzy-mwzr1hd8t-arfat-fakihs-projects.vercel.app/";
+      window.location.href = "https://zerodha-orzy-gypy78cjm-arfat-fakihs-projects.vercel.app/";
     } else {
       alert(res.data.message || "Login failed!");
     }
