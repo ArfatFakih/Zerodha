@@ -36,6 +36,8 @@ app.use(
 
 app.use(bodyParser.json());
 
+app.set("trust proxy", 1);
+
 // Sessions (Mongo store keeps sessions across restarts)
 app.use(session({
   secret: process.env.SESSION_SECRET || "supersecret",
