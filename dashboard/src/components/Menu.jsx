@@ -21,7 +21,7 @@ const Menu = () => {
     // Clear user session
     localStorage.removeItem("username");
     localStorage.removeItem("token"); // if you store auth token
-    window.location.href = "https://zerodha-2saf8odud-arfat-fakihs-projects.vercel.app/";
+    window.location.href = "https://zerodha-b03g67fs6-arfat-fakihs-projects.vercel.app/";
   };
 
   const menuClass = "menu";
