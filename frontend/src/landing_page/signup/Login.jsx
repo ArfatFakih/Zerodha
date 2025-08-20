@@ -14,7 +14,7 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   try {
     const res = await axios.post(
-      "http://localhost:8000/login",
+      "https://zerodha-9zmu.onrender.com/login", // Updated backend URL
       form,
       { withCredentials: true }
     );
@@ -25,8 +25,8 @@ const handleSubmit = async (e) => {
       // Save user info or session
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      // Redirect to dashboard app
-      window.location.href = "http://localhost:5173/";
+      // Redirect to dashboard app (Updated dashboard URL)
+      window.location.href = "https://zerodha-orzy-novdrk190-arfat-fakihs-projects.vercel.app/";
     } else {
       alert(res.data.message || "Login failed!");
     }
@@ -35,7 +35,6 @@ const handleSubmit = async (e) => {
     alert("Invalid credentials!");
   }
 };
-
 
   return (
     <div className="auth-page">

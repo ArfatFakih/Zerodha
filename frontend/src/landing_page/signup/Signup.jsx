@@ -14,7 +14,11 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:8000/signup", form, { withCredentials: true });
+      await axios.post(
+        "https://zerodha-9zmu.onrender.com/signup", // Updated backend URL
+        form, 
+        { withCredentials: true }
+      );
       alert("Signup successful! Please login.");
       navigate("/login");
     } catch (err) {
