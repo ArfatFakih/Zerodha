@@ -1,6 +1,9 @@
 const express = require("express");
 const app = express();
 const dotenv = require('dotenv').config();
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 const PORT = process.env.PORT || 3002;
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -19,8 +22,13 @@ connectDb();
 
 app.use(
   cors({
-    origin: ["http://localhost:5174", "http://localhost:5173"], // allow both frontends
-    credentials: true, // allow cookies / sessions
+    origin: [
+      "http://localhost:5174", 
+      "http://localhost:5173",
+      process.env.FRONTEND_URL,  // Your Vercel frontend URL
+      process.env.DASHBOARD_URL, // Your Vercel dashboard URL
+    ].filter(Boolean), // Remove any undefined values
+    credentials: true,
   })
 );
 app.use(bodyParser.json());
@@ -30,12 +38,15 @@ app.use(session({
   secret: process.env.SESSION_SECRET || "supersecret",
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
+  store: MongoStore.create({ 
+    mongoUrl: process.env.MONGO_URL,
+    touchAfter: 24 * 3600 // lazy session update
+  }),
   cookie: {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false,           // set true if you serve over HTTPS
-    maxAge: 1000 * 60 * 60,  // 1 hour
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production', // true for HTTPS
+    maxAge: 1000 * 60 * 60 * 24, // 24 hours
   },
 }));
 
@@ -228,31 +239,65 @@ app.use("/", authRoutes);
 
 
 app.get("/allHoldings", ensureAuth, async (req, res) => {
-  const allHoldings = await Holding.find({ user: req.user._id }).lean();
-  res.json(allHoldings);
+  try {
+    const allHoldings = await Holding.find({ user: req.user._id }).lean();
+    res.json(allHoldings);
+  } catch (error) {
+    console.error('Error fetching holdings:', error);
+    res.status(500).json({ message: 'Failed to fetch holdings' });
+  }
 });
 
 app.get("/allPositions", ensureAuth, async (req, res) => {
-  const allPositions = await Position.find({ user: req.user._id }).lean();
-  res.json(allPositions);
+  try {
+    const allPositions = await Position.find({ user: req.user._id }).lean();
+    res.json(allPositions);
+  } catch (error) {
+    console.error('Error fetching positions:', error);
+    res.status(500).json({ message: 'Failed to fetch positions' });
+  }
 });
 
 app.get("/allOrders", ensureAuth, async (req, res) => {
-  const orders = await Order.find({ user: req.user._id }).lean();
-  res.json(orders);
+  try {
+    const orders = await Order.find({ user: req.user._id }).lean();
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ message: 'Failed to fetch orders' });
+  }
 });
 
 app.post("/newOrder", ensureAuth, async (req, res) => {
-  const newOrder = new Order({
-    name: req.body.name,
-    qty: req.body.qty,
-    price: req.body.price,
-    mode: req.body.mode,
-    user: req.user._id, // <- tie to logged-in user
-  });
+  try {
+    const newOrder = new Order({
+      name: req.body.name,
+      qty: req.body.qty,
+      price: req.body.price,
+      mode: req.body.mode,
+      user: req.user._id, // <- tie to logged-in user
+    });
 
-  await newOrder.save();
-  res.send("Order saved!");
+    await newOrder.save();
+    res.json({ message: "Order saved!", orderId: newOrder._id });
+  } catch (error) {
+    console.error('Error saving order:', error);
+    res.status(500).json({ message: 'Failed to save order' });
+  }
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'production' ? {} : err
+  });
+});
+
+// Handle 404
+app.use('*', (req, res) => {
+  res.status(404).json({ message: 'Route not found' });
 });
 
 //Normal change
