@@ -37,7 +37,18 @@ router.post("/login", (req, res, next) => {
 
     req.logIn(user, (err2) => {
       if (err2) return next(err2);
-      return res.json({ message: "Login successful", user: { id: user._id, email: user.email } });
+      
+      // Log successful login for debugging
+      console.log(`User ${user.email} logged in successfully. Session ID: ${req.sessionID}`);
+      
+      return res.json({ 
+        message: "Login successful", 
+        user: { 
+          id: user._id, 
+          email: user.email, 
+          username: user.username 
+        } 
+      });
     });
   })(req, res, next);
 });
@@ -47,12 +58,74 @@ router.get("/me", ensureAuth, (req, res) => {
   res.json({ user: { id: req.user._id, email: req.user.email, username: req.user.username } });
 });
 
-// Logout
-router.post("/logout", ensureAuth, (req, res) => {
+// Session verification endpoint
+router.get("/verify-session", (req, res) => {
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    res.json({ 
+      authenticated: true, 
+      user: { 
+        id: req.user._id, 
+        email: req.user.email, 
+        username: req.user.username 
+      } 
+    });
+  } else {
+    res.json({ authenticated: false });
+  }
+});
+
+// Fixed Logout - properly destroy session
+router.post("/logout", (req, res) => {
+  const sessionId = req.sessionID;
+  const userEmail = req.user?.email || 'unknown';
+  
+  console.log(`Logging out user: ${userEmail}, Session ID: ${sessionId}`);
+  
   req.logout((err) => {
-    if (err) return res.status(500).json({ message: "Logout error" });
-    res.json({ message: "Logged out" });
+    if (err) {
+      console.error('Passport logout error:', err);
+      return res.status(500).json({ message: "Logout error" });
+    }
+    
+    // Destroy the session completely
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Session destroy error:', err);
+        return res.status(500).json({ message: "Session destroy error" });
+      }
+      
+      // Clear the session cookie
+      res.clearCookie('connect.sid', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true
+      });
+      
+      console.log(`Successfully logged out user: ${userEmail}`);
+      res.json({ message: "Logged out successfully" });
+    });
   });
+});
+
+// Alternative logout route that doesn't require authentication (for cleanup)
+router.post("/force-logout", (req, res) => {
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Force logout session destroy error:', err);
+      }
+    });
+  }
+  
+  res.clearCookie('connect.sid', {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'none',
+    secure: true
+  });
+  
+  res.json({ message: "Force logout completed" });
 });
 
 module.exports = { router, ensureAuth };
