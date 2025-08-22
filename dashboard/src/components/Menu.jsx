@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 
 const Menu = () => {
   const [selectMenu, setSelectMenu] = useState(0);
   const [isProfileDropdown, setIsProfileDropdown] = useState(false);
   const navigate = useNavigate();
 
-  // Get username from localStorage or user object
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const username = user.username || user.email || "John Doe";
+  // Example username (you can fetch from context/localStorage/api)
+  const username = localStorage.getItem("username") || "John Doe";
 
   const handleMenuClick = (index) => {
     setSelectMenu(index);
@@ -19,38 +17,11 @@ const Menu = () => {
     setIsProfileDropdown(!isProfileDropdown);
   };
 
-  const handleLogout = async () => {
-    try {
-      // Call backend logout endpoint to clear server-side session/cookies
-      const response = await axios.post(
-        "https://zerodha-9zmu.onrender.com/logout",
-        {},
-        { withCredentials: true }
-      );
-      
-      console.log("Logout response:", response.data);
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Even if logout fails, try force logout
-      try {
-        await axios.post(
-          "https://zerodha-9zmu.onrender.com/force-logout",
-          {},
-          { withCredentials: true }
-        );
-      } catch (forceError) {
-        console.error("Force logout error:", forceError);
-      }
-    } finally {
-      // Clear all local storage data
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Add a small delay before redirect to ensure cleanup
-      setTimeout(() => {
-        window.location.href = "https://zerodha-b03g67fs6-arfat-fakihs-projects.vercel.app/";
-      }, 100);
-    }
+  const handleLogout = () => {
+    // Clear user session
+    localStorage.removeItem("username");
+    localStorage.removeItem("token"); // if you store auth token
+    window.location.href = "https://zerodha-b03g67fs6-arfat-fakihs-projects.vercel.app/";
   };
 
   const menuClass = "menu";

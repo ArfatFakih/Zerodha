@@ -17,46 +17,38 @@ const { router: authRoutes, ensureAuth } = require("./routes/user");
 
 connectDb();
 
-// CORS configuration - more specific for your Vercel domains
 app.use(
   cors({
-    origin: [
-      "https://zerodha-orzy-gypy78cjm-arfat-fakihs-projects.vercel.app", // Your dashboard
-      "https://zerodha-b03g67fs6-arfat-fakihs-projects.vercel.app",      // Your login/signup
-      /^https:\/\/.*\.vercel\.app$/, // Any vercel app (for deployments)
-      "http://localhost:3000",
-      "http://localhost:3001"
-    ],
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        origin.includes("vercel.app") || // allow any vercel.app frontend
+        origin.startsWith("http://localhost:")
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    exposedHeaders: ['Set-Cookie']
   })
 );
-
-// Handle preflight requests
-app.options('*', cors());
 
 app.use(bodyParser.json());
 
 app.set("trust proxy", 1);
 
-// Sessions (MongoDB store)
+// Sessions (Mongo store keeps sessions across restarts)
 app.use(session({
-  name: 'connect.sid', // Explicit session cookie name
   secret: process.env.SESSION_SECRET || "supersecret",
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ 
-    mongoUrl: process.env.MONGO_URL,
-    touchAfter: 24 * 3600 // lazy session update
-  }),
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
   cookie: {
     httpOnly: true,
     sameSite: "none",
-    secure: true, // Since you're using HTTPS
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours (longer session)
-    domain: undefined // Let browser handle domain
+    secure: true,           // set true if you serve over HTTPS
+    maxAge: 1000 * 60 * 60,  // 1 hour
   },
 }));
 
@@ -65,66 +57,44 @@ require("./config/passport")(passport);
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Middleware to log session info for debugging
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - Session ID: ${req.sessionID}, Authenticated: ${req.isAuthenticated ? req.isAuthenticated() : false}`);
-  next();
-});
-
 // Auth routes
 app.use("/", authRoutes);
 
+
+
 // -------- Protected data routes (per-user isolation) --------
 
+
 app.get("/allHoldings", ensureAuth, async (req, res) => {
-  try {
-    const allHoldings = await Holding.find({ user: req.user._id }).lean();
-    res.json(allHoldings);
-  } catch (error) {
-    console.error('Error fetching holdings:', error);
-    res.status(500).json({ message: 'Error fetching holdings' });
-  }
+  const allHoldings = await Holding.find({ user: req.user._id }).lean();
+  res.json(allHoldings);
 });
 
 app.get("/allPositions", ensureAuth, async (req, res) => {
-  try {
-    const allPositions = await Position.find({ user: req.user._id }).lean();
-    res.json(allPositions);
-  } catch (error) {
-    console.error('Error fetching positions:', error);
-    res.status(500).json({ message: 'Error fetching positions' });
-  }
+  const allPositions = await Position.find({ user: req.user._id }).lean();
+  res.json(allPositions);
 });
 
 app.get("/allOrders", ensureAuth, async (req, res) => {
-  try {
-    const orders = await Order.find({ user: req.user._id }).lean();
-    res.json(orders);
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    res.status(500).json({ message: 'Error fetching orders' });
-  }
+  const orders = await Order.find({ user: req.user._id }).lean();
+  res.json(orders);
 });
 
 app.post("/newOrder", ensureAuth, async (req, res) => {
-  try {
-    const newOrder = new Order({
-      name: req.body.name,
-      qty: req.body.qty,
-      price: req.body.price,
-      mode: req.body.mode,
-      user: req.user._id, // tie to logged-in user
-    });
+  const newOrder = new Order({
+    name: req.body.name,
+    qty: req.body.qty,
+    price: req.body.price,
+    mode: req.body.mode,
+    user: req.user._id, // <- tie to logged-in user
+  });
 
-    await newOrder.save();
-    console.log(`Order saved for user: ${req.user.email}`);
-    res.json({ message: "Order saved successfully!" });
-  } catch (error) {
-    console.error('Error saving order:', error);
-    res.status(500).json({ message: 'Error saving order' });
-  }
+  await newOrder.save();
+  res.send("Order saved!");
 });
+
+//Normal change
 
 app.listen(PORT, () => {
     console.log(`SERVER IS RUNNING ON PORT:${PORT}`);
-});
+})
