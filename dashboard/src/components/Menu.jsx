@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from 'axios'
 
 const Menu = () => {
   const [selectMenu, setSelectMenu] = useState(0);
@@ -17,11 +18,15 @@ const Menu = () => {
     setIsProfileDropdown(!isProfileDropdown);
   };
 
-  const handleLogout = () => {
-    // Clear user session
-    localStorage.removeItem("username");
-    localStorage.removeItem("token"); // if you store auth token
-    window.location.href = "https://zerodha-b03g67fs6-arfat-fakihs-projects.vercel.app/";
+  const handleLogout = async () => {
+    try {
+      await axios.post("http://localhost:3002/auth/logout", {}, { withCredentials: true });
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "http://localhost:5173/";
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
   };
 
   const menuClass = "menu";

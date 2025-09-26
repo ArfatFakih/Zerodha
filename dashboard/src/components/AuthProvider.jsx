@@ -1,4 +1,3 @@
-// components/AuthProvider.js
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
@@ -17,7 +16,7 @@ const AuthProvider = ({ children }) => {
 
         // Verify with backend
         const response = await axios.get(
-          'https://zerodha-9zmu.onrender.com/verify-session',
+          'http://localhost:3002/auth/verify-session',
           { withCredentials: true }
         );
 
@@ -35,7 +34,7 @@ const AuthProvider = ({ children }) => {
         sessionStorage.clear();
         
         // Redirect to login
-        window.location.href = 'https://zerodha-b03g67fs6-arfat-fakihs-projects.vercel.app/';
+        window.location.href = 'http://localhost:5173/login';
       } finally {
         setLoading(false);
       }

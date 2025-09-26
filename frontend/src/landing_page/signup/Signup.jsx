@@ -15,7 +15,7 @@ const Signup = () => {
     e.preventDefault();
     try {
       await axios.post(
-        "https://zerodha-9zmu.onrender.com/signup", // Updated backend URL
+        "http://localhost:3002/auth/signup", // Updated backend URL
         form, 
         { withCredentials: true }
       );

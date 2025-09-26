@@ -1,41 +1,45 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Link } from "react-router-dom";
-
 import axios from "axios";
-
 import GeneralContext from "../GeneralContext";
 
-import "./BuyWindow.css";
+import "./BuyWindow.css"; // Make sure this is imported
 
-const BuyWindow = ({ uid }) => {
+const BuyWindow = ({ uid, defaultMode = "BUY" }) => {
   const [stockQuantity, setStockQuantity] = useState(1);
   const [stockPrice, setStockPrice] = useState(0.0);
+  const [orderType, setOrderType] = useState(defaultMode);
 
   const { closeBuyWindow } = useContext(GeneralContext);
 
-  const handleBuyClick = async () => {
+  // Reset order type when window opens with new mode
+  useEffect(() => {
+    setOrderType(defaultMode);
+  }, [defaultMode]);
+
+  const handlePlaceOrder = async () => {
     try {
       await axios.post(
-        "https://zerodha-9zmu.onrender.com/newOrder",
+        "http://localhost:3002/orders/",
         {
           name: uid,
           qty: parseInt(stockQuantity, 10),
           price: parseFloat(stockPrice),
-          mode: "BUY",
+          mode: orderType,
         },
         { withCredentials: true }
       );
 
-      alert("Order placed successfully ✅");
-      closeBuyWindow(); // ✅ now this works
+      alert(`${orderType} order placed successfully`);
+      closeBuyWindow();
     } catch (err) {
       console.error("Error placing order:", err);
-      alert("Failed to place order ❌");
+      alert("Failed to place order");
     }
   };
 
   const handleCancelClick = () => {
-    closeBuyWindow(); // ✅ use context function
+    closeBuyWindow();
   };
 
   return (
@@ -46,22 +50,27 @@ const BuyWindow = ({ uid }) => {
             <legend>Qty.</legend>
             <input
               type="number"
-              name="qty"
-              id="qty"
-              onChange={(e) => setStockQuantity(e.target.value)}
               value={stockQuantity}
+              onChange={(e) => setStockQuantity(e.target.value)}
             />
           </fieldset>
           <fieldset>
             <legend>Price</legend>
             <input
               type="number"
-              name="price"
-              id="price"
-              step="0.05"
-              onChange={(e) => setStockPrice(e.target.value)}
               value={stockPrice}
+              onChange={(e) => setStockPrice(e.target.value)}
+              step="0.05"
             />
+          </fieldset>
+          <fieldset>
+            <legend>Mode</legend>
+            <select value={orderType} onChange={(e) => setOrderType(e.target.value)}>
+              <option value="BUY">BUY</option>
+              <option value="SELL">SELL</option>
+              <option value="INTRADAY_BUY">Intraday BUY</option>
+              <option value="INTRADAY_SELL">Intraday SELL</option>
+            </select>
           </fieldset>
         </div>
       </div>
@@ -69,10 +78,10 @@ const BuyWindow = ({ uid }) => {
       <div className="buttons">
         <span>Margin required ₹140.65</span>
         <div>
-          <Link className="btn btn-blue" onClick={handleBuyClick}>
-            Buy
+          <Link className="btn btn-blue" onClick={handlePlaceOrder}>
+            {orderType === "SELL" ? "Sell" : "Buy"}
           </Link>
-          <Link to="" className="btn btn-grey" onClick={handleCancelClick}>
+          <Link className="btn btn-grey" onClick={handleCancelClick}>
             Cancel
           </Link>
         </div>

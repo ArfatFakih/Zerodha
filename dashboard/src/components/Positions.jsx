@@ -8,7 +8,7 @@ const Positions = () => {
   const [allPositions, setAllPositions] = useState([]);
   
   useEffect( () =>{
-    axios.get("https://zerodha-9zmu.onrender.com/allPositions", { withCredentials: true }).then((res) => {
+    axios.get("http://localhost:3002/positions/", { withCredentials: true }).then((res) => {
       setAllPositions(res.data);
     })
   }, []);

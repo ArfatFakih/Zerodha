@@ -1,28 +1,29 @@
 const express = require("express");
-const app = express();
-const dotenv = require('dotenv').config();
-const PORT = process.env.PORT || 3002;
+const dotenv = require("dotenv").config();
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const passport = require("passport");
 
-const connectDb = require('./config/dbConnection');
-const Holding = require('./models/HoldingsModel');
-const Position = require('./models/PositionsModel');
-const Order = require('./models/OrdersModel');
+const connectDb = require("./config/dbConnection");
+const authRoutes = require("./routes/authRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const holdingRoutes = require("./routes/holdingRoutes");
+const positionRoutes = require("./routes/positionRoutes");
 
-const { router: authRoutes, ensureAuth } = require("./routes/user");
+const app = express();
+const PORT = process.env.PORT || 3002;
 
 connectDb();
 
+// CORS
 app.use(
   cors({
     origin: (origin, callback) => {
       if (
         !origin ||
-        origin.includes("vercel.app") || // allow any vercel.app frontend
+        origin.includes("vercel.app") ||
         origin.startsWith("http://localhost:")
       ) {
         callback(null, true);
@@ -35,66 +36,35 @@ app.use(
 );
 
 app.use(bodyParser.json());
+// app.set("trust proxy", 1);
 
-app.set("trust proxy", 1);
-
-// Sessions (Mongo store keeps sessions across restarts)
-app.use(session({
-  secret: process.env.SESSION_SECRET || "supersecret",
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
-  cookie: {
-    httpOnly: true,
-    sameSite: "none",
-    secure: true,           // set true if you serve over HTTPS
-    maxAge: 1000 * 60 * 60,  // 1 hour
-  },
-}));
+// Sessions
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "supersecret",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      maxAge: 1000 * 60 * 60,
+    },
+  })
+);
 
 // Passport
 require("./config/passport")(passport);
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Auth routes
-app.use("/", authRoutes);
-
-
-
-// -------- Protected data routes (per-user isolation) --------
-
-
-app.get("/allHoldings", ensureAuth, async (req, res) => {
-  const allHoldings = await Holding.find({ user: req.user._id }).lean();
-  res.json(allHoldings);
-});
-
-app.get("/allPositions", ensureAuth, async (req, res) => {
-  const allPositions = await Position.find({ user: req.user._id }).lean();
-  res.json(allPositions);
-});
-
-app.get("/allOrders", ensureAuth, async (req, res) => {
-  const orders = await Order.find({ user: req.user._id }).lean();
-  res.json(orders);
-});
-
-app.post("/newOrder", ensureAuth, async (req, res) => {
-  const newOrder = new Order({
-    name: req.body.name,
-    qty: req.body.qty,
-    price: req.body.price,
-    mode: req.body.mode,
-    user: req.user._id, // <- tie to logged-in user
-  });
-
-  await newOrder.save();
-  res.send("Order saved!");
-});
-
-//Normal change
+// Routes
+app.use("/auth", authRoutes);
+app.use("/orders", orderRoutes);
+app.use("/holdings", holdingRoutes);
+app.use("/positions", positionRoutes);
 
 app.listen(PORT, () => {
-    console.log(`SERVER IS RUNNING ON PORT:${PORT}`);
-})
+  console.log(`Server running on port ${PORT}`);
+});

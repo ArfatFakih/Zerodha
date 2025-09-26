@@ -1,10 +1,8 @@
 import React, { useState, useContext } from "react";
-
 import { watchlist } from "../data/data";
 import GeneralContext from "./GeneralContext";
 
-import { Tooltip, Grow } from "@mui/material";
-
+import { Tooltip } from "@mui/material";
 import {
   BarChartOutlined,
   KeyboardArrowDown,
@@ -14,10 +12,7 @@ import {
 
 import DoughnoutGraph from "./Graphs/DoughnoutGraph";
 
-
-
 const WatchList = () => {
-
   const labels = watchlist.map((curr) => curr["name"]);
 
   const data = {
@@ -46,7 +41,7 @@ const WatchList = () => {
       },
     ],
   };
-  
+
   return (
     <div className="watchlist-container">
       <div className="search-container">
@@ -73,21 +68,14 @@ const WatchList = () => {
 
 export default WatchList;
 
-
-
 const WatchListItem = ({ stock }) => {
   const [showWatchlistActions, setShowWatchlistActions] = useState(false);
 
-  const handleMouseEnter = (e) => {
-    setShowWatchlistActions(true);
-  };
-
-  const handleMouseLeave = (e) => {
-    setShowWatchlistActions(false);
-  };
-
   return (
-    <li onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+    <li
+      onMouseEnter={() => setShowWatchlistActions(true)}
+      onMouseLeave={() => setShowWatchlistActions(false)}
+    >
       <div className="item">
         <p className={stock.isDown ? "down" : "up"}>{stock.name}</p>
         <div className="itemInfo">
@@ -105,24 +93,25 @@ const WatchListItem = ({ stock }) => {
   );
 };
 
-
-
 const WatchListActions = ({ uid }) => {
-
-  const generalContext = useContext(GeneralContext);
+  const { openBuyWindow } = useContext(GeneralContext);
 
   const handleBuyClick = () => {
-    generalContext.openBuyWindow(uid);
+    openBuyWindow(uid, "BUY");
+  };
+
+  const handleSellClick = () => {
+    openBuyWindow(uid, "SELL");
   };
 
   return (
     <span className="actions">
       <span>
-        <Tooltip title="Buy (B)" placement="top" arrow onClick={handleBuyClick}>
-          <button className="buy">Buy</button>
+        <Tooltip title="Buy (B)" placement="top" arrow>
+          <button className="buy" onClick={handleBuyClick}>Buy</button>
         </Tooltip>
         <Tooltip title="Sell (S)" placement="top" arrow>
-          <button className="sell">Sell</button>
+          <button className="sell" onClick={handleSellClick}>Sell</button>
         </Tooltip>
         <Tooltip title="Analytics (A)" placement="top" arrow>
           <button className="action">
